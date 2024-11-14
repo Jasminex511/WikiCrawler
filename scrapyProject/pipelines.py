@@ -6,8 +6,32 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
+from pymongo.mongo_client import MongoClient
 
 
-class ScrapyprojectPipeline:
+class MongoPipeline:
+    collection_name = "wiki_items"
+
+    def __init__(self, mongo_uri, mongo_db):
+        self.db = None
+        self.client = None
+        self.mongo_uri = mongo_uri
+        self.mongo_db = mongo_db
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+            mongo_uri=crawler.settings.get("MONGO_URI"),
+            mongo_db=crawler.settings.get("MONGO_DATABASE", "items"),
+        )
+
+    def open_spider(self, spider):
+        self.client = MongoClient(self.mongo_uri)
+        self.db = self.client[self.mongo_db]
+
+    def close_spider(self, spider):
+        self.client.close()
+
     def process_item(self, item, spider):
+        self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
         return item

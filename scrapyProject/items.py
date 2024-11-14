@@ -4,7 +4,13 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from dataclasses import dataclass
 
+
+@dataclass
+class WikiItem:
+    title: str
+    photo_url: int
 
 class ScrapyprojectItem(scrapy.Item):
     # define the fields for your item here like:
