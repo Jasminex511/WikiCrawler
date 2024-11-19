@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 @dataclass
 class WikiItem:
+    url: str
     title: str
     photo_url: int
 
