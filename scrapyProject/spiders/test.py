@@ -1,5 +1,6 @@
 import scrapy
 import re
+import os
 from scrapyProject.items import WikiItem
 from scrapyProject.spiders.get_visited import ReadMongo
 
@@ -46,6 +47,14 @@ class WikiSpider(scrapy.Spider):
     def parse_article(self, response, depth):
         title = response.css("span.mw-page-title-main::text").get()
         photo_url = response.css("img.mw-file-element::attr(src)").get()
+
+        # folder_name = "raw_html"
+        # os.makedirs(folder_name, exist_ok=True)
+        # file_name = f"{title if title else 'untitled'}.html"
+        # file_path = os.path.join(folder_name, file_name)
+        # with open(file_path, "w", encoding="utf-8") as f:
+        #     f.write(response.text)
+
         yield WikiItem(
             url=response.url,
             title=title,
