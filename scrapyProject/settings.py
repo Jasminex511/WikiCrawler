@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 # Scrapy settings for scrapyProject project
 #
 # For simplicity, this file contains only settings considered important or
@@ -7,6 +8,8 @@ import os
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+
+load_dotenv()
 
 BOT_NAME = 'scrapyProject'
 
@@ -64,7 +67,7 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'scrapyProject.pipelines.MongoPipeline': 300,
+    'scrapyProject.pipelines.ContentKafkaPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -91,3 +94,10 @@ ITEM_PIPELINES = {
 
 PASSWORD = os.getenv("PASSWORD")
 MONGO_URI = f"mongodb+srv://yuhanxieyx:{PASSWORD}@wikidb.8zvpa.mongodb.net/?retryWrites=true&w=majority&appName=WikiDB"
+KAFKA_CONFIG = {
+    'bootstrap.servers': os.getenv('KAFKA_BROKER'),
+    'security.protocol': 'SASL_SSL',
+    'sasl.mechanisms': 'PLAIN',
+    'sasl.username': os.getenv('KAFKA_USERNAME'),
+    'sasl.password': os.getenv('KAFKA_PASSWORD'),
+}

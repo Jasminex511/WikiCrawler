@@ -5,33 +5,28 @@
 
 
 # useful for handling different item types with a single interface
-from itemadapter import ItemAdapter
-from pymongo.mongo_client import MongoClient
+import json
+from confluent_kafka import Producer
+from scrapyProject.items import ContentItem
+from scrapyProject.settings import KAFKA_CONFIG
 
 
-class MongoPipeline:
-    collection_name = "wiki_items"
+def report(err, msg):
+    if err:
+        print(f"URL Kafka delivery failed: {err}")
+    else:
+        print(f"URL sent: {msg.topic()}")
 
-    def __init__(self, mongo_uri, mongo_db):
-        self.db = None
-        self.client = None
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(
-            mongo_uri=crawler.settings.get("MONGO_URI"),
-            mongo_db=crawler.settings.get("MONGO_DATABASE", "items"),
-        )
-
-    def open_spider(self, spider):
-        self.client = MongoClient(self.mongo_uri)
-        self.db = self.client[self.mongo_db]
-
-    def close_spider(self, spider):
-        self.client.close()
+class ContentKafkaPipeline:
+    def __init__(self):
+        self.producer = Producer(KAFKA_CONFIG)
 
     def process_item(self, item, spider):
-        self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
+        if isinstance(item, ContentItem):
+            self.producer.produce(
+                topic="wiki-content",
+                value=json.dumps(dict(item)),
+                callback=report
+            )
+            self.producer.poll(0)
         return item
