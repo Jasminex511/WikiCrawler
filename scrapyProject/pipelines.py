@@ -30,3 +30,7 @@ class ContentKafkaPipeline:
             )
             self.producer.poll(0)
         return item
+
+    def close_spider(self, spider):
+        spider.logger.info("Flushing Kafka producer from pipeline...")
+        self.producer.flush()

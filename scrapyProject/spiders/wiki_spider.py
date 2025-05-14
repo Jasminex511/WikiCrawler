@@ -64,8 +64,13 @@ class WikiSpider(scrapy.Spider):
             filtered.append(stripped)
         clean_text = " ".join(filtered)
 
-        yield ContentItem(
-            url=response.url,
-            title=title,
-            content=clean_text
-        )
+        if "Born" in clean_text:
+            yield ContentItem(
+                url=response.url,
+                title=title,
+                content=clean_text
+            )
+
+    def close_spider(self, spider):
+        self.logger.info("Flushing Kafka producer from spider...")
+        self.producer.flush()
