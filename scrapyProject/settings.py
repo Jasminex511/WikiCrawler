@@ -93,7 +93,6 @@ ITEM_PIPELINES = {
 
 
 PASSWORD = os.getenv("PASSWORD")
-MONGO_URI = f"mongodb+srv://yuhanxieyx:{PASSWORD}@wikidb.8zvpa.mongodb.net/?retryWrites=true&w=majority&appName=WikiDB"
 KAFKA_CONFIG = {
     'bootstrap.servers': os.getenv('KAFKA_BROKER'),
     'security.protocol': 'SASL_SSL',

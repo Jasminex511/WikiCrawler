@@ -1,14 +1,21 @@
-from abc import abstractmethod, ABC
-from pyspark.sql import SparkSession
+from confluent_kafka import Producer
+import json
+from config.settings import KAFKA_CONFIG
 
-class BaseProducer(ABC):
 
-    def __init__(self, appname):
-        self.spark = SparkSession.builder \
-            .appName(appname) \
-            .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
-            .getOrCreate()
+class BaseProducer:
+    def __init__(self):
+        self.producer = Producer(KAFKA_CONFIG)
 
-    @abstractmethod
-    def produce_message(self, output_df, topic, checkpoint_location):
-        pass
+    def send(self, topic, value: dict):
+        try:
+            self.producer.produce(
+                topic=topic,
+                value=json.dumps(value).encode("utf-8")
+            )
+            self.producer.poll(0)
+        except Exception as e:
+            print(f"[ERROR] Failed to produce message to topic {topic}: {e}")
+
+    def flush(self):
+        self.producer.flush()

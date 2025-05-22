@@ -1,7 +1,9 @@
 import openai
 import json
+import time
 from dotenv import load_dotenv
 import os
+from openai.error import RateLimitError, Timeout, APIError
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -25,21 +27,26 @@ def extract_profile_info(text):
     }
     """
 
-    print("calling openai")
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": text[:10000]}  # remove the +'"}'
-        ],
-        temperature=0.5
-    )
+    for attempt in range(5):
+        try:
+            print("Calling OpenAI")
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": text[:15000]}
+                ],
+                temperature=0.5
+            )
 
-    extracted_info = response["choices"][0]["message"]["content"]
+            extracted_info = response["choices"][0]["message"]["content"]
+            res = json.loads(extracted_info)
+            print(res)
+            return res
 
-    try:
-        extracted_data = json.loads(extracted_info)
-    except json.JSONDecodeError:
-        extracted_data = {"error": "Failed to extract data in JSON format", "raw": extracted_info}
+        except (RateLimitError, Timeout, APIError, json.JSONDecodeError) as e:
+            wait_time = (2 ** attempt) + 0.5
+            print(f"Retry {attempt+1}/5 due to: {e}. Waiting {wait_time:.1f}s...")
+            time.sleep(wait_time)
 
-    return extracted_data
+    return None

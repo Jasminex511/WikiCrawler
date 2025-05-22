@@ -1,14 +1,25 @@
-from abc import abstractmethod, ABC
-from pyspark.sql import SparkSession
+from confluent_kafka import Consumer
+from config.settings import KAFKA_CONFIG
 
-class BaseConsumer(ABC):
 
-    def __init__(self, appname):
-        self.spark = SparkSession.builder \
-            .appName(appname) \
-            .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
-            .getOrCreate()
+class BaseConsumer:
+    def __init__(self, group_id):
+        self.consumer = Consumer({
+            **KAFKA_CONFIG,
+            'group.id': group_id,
+            'auto.offset.reset': 'earliest',
+        })
 
-    @abstractmethod
-    def consume_message(self, topic):
-        pass
+    def consume_messages(self, topic):
+        self.consumer.subscribe([topic])
+        while True:
+            msg = self.consumer.poll(1.0)
+            if msg is None:
+                continue
+            if msg.error():
+                print(f"[Kafka Error] {msg.error()}")
+                continue
+            yield msg.value().decode('utf-8')
+
+    def close(self):
+        self.consumer.close()

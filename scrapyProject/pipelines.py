@@ -14,8 +14,6 @@ from scrapyProject.settings import KAFKA_CONFIG
 def report(err, msg):
     if err:
         print(f"URL Kafka delivery failed: {err}")
-    else:
-        print(f"URL sent: {msg.topic()}")
 
 class ContentKafkaPipeline:
     def __init__(self):

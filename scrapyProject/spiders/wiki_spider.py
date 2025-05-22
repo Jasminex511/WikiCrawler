@@ -36,24 +36,29 @@ class WikiSpider(scrapy.Spider):
         if depth > self.max_depth:
             return
 
-        for link in response.css("a::attr(href)").getall()[:100]:
+        if any(label.strip() == "Born" for label in response.css("th.infobox-label::text").getall()):
+            yield from self.parse_article(response, depth + 1)
+
+        for link in response.css("a::attr(href)").getall():
             full_url = response.urljoin(link)
             domain = urlparse(full_url).netloc
             if (
-                re.match(r".*/wiki/([A-Z][a-z]+_[A-Z][a-z]+)$", link)
+                link.startswith("/wiki/")
+                and not re.search(r":", link)
                 and domain in self.allowed_domains
                 and not self.redis.sismember("visited_urls", full_url)
             ):
                 self.redis.sadd("visited_urls", full_url)
                 yield scrapy.Request(url=full_url, callback=self.parse, cb_kwargs={'depth': depth + 1}, dont_filter=True)
 
-        yield scrapy.Request(url=response.url, callback=self.parse_article, cb_kwargs={'depth': depth + 1}, dont_filter=True)
 
     def parse_article(self, response, depth):
         title = response.css("span.mw-page-title-main::text").get()
 
         sel = Selector(text=response.text)
-        all_text = sel.xpath('//div[@id="mw-content-text"]//text()[not(ancestor::style) and not(ancestor::script)]').getall()
+        all_text = sel.xpath(
+            '//div[@id="mw-content-text"]//text()[not(ancestor::style) and not(ancestor::script)]').getall()
+
         filtered = []
         for t in all_text:
             stripped = t.strip()
@@ -62,14 +67,14 @@ class WikiSpider(scrapy.Spider):
             if stripped == "References":
                 break
             filtered.append(stripped)
+
         clean_text = " ".join(filtered)
 
-        if "Born" in clean_text:
-            yield ContentItem(
-                url=response.url,
-                title=title,
-                content=clean_text
-            )
+        yield ContentItem(
+            url=response.url,
+            title=title,
+            content=clean_text
+        )
 
     def close_spider(self, spider):
         self.logger.info("Flushing Kafka producer from spider...")
